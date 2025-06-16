@@ -15,6 +15,10 @@ export const commands = {
         {
             command: '/calc',
             description: 'Calculate crypto conversions'
+        },
+        {
+            command: '/chart',
+            description: 'Get cryptocurrency price chart'
         }
     ],
     fun: [
@@ -43,6 +47,10 @@ export const commands = {
         {
             command: '/dev',
             description: 'Show developer information'
+        },
+        {
+            command: '/request_feature',
+            description: 'Request a new feature'
         }
     ]
 };

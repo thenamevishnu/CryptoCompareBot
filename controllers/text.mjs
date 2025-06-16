@@ -1,7 +1,7 @@
-import { ads } from "../config/ads.config.mjs";
 import { settings } from "../config/bot.config.mjs";
 import { api } from "../config/tg.config.mjs";
 import { defaultOptions, generateCode, getAds, numberFormat, sendError, userMention } from "../lib/bot.mjs";
+import { getCryptoChart } from "../lib/chart.mjs";
 import { UserModel } from "../models/user.model.mjs";
 
 api.onText(/\/start(?:$|\s+(.*))?/, async (message, match) => {
@@ -100,7 +100,7 @@ api.onText(/\/p(?:$|\s+(.*))?$|\/price(?:$|\s+(.*))?$/, async (message, match) =
         }
         const raw = data["RAW"][from_coin][to_coin]
         const display = data["DISPLAY"][from_coin][to_coin]
-        const text = `<b>${amount.toFixed(2)} ${from_coin}: <code>${display.TOSYMBOL}${(amount * raw.PRICE).toFixed(6)}</code>\n24h Change: <code>${raw.CHANGEPCT24HOUR.toFixed(2)}% ${raw.CHANGEPCT24HOUR.toFixed(2) < 0 ? "🔴" : "🟢"}</code>\n24h Volume: <code>${display.TOSYMBOL}${numberFormat(raw.VOLUME24HOURTO)}</code>\n24h High: <code>${display.TOSYMBOL}${numberFormat(raw.HIGH24HOUR)}</code>\n24h Low: <code>${display.TOSYMBOL}${numberFormat(raw.LOW24HOUR)}</code>\nMarket Cap: <code>${display.TOSYMBOL}${numberFormat(raw.MKTCAP)}</code>\n${getAds()}</b>`
+        const text = `<b>${amount.toFixed(2)} ${from_coin}: <code>${display.TOSYMBOL}${(amount * raw.PRICE).toFixed(6)}</code>\n24h Change: <code>${raw.CHANGEPCT24HOUR.toFixed(2)}% ${raw.CHANGEPCT24HOUR.toFixed(2) < 0 ? "🔴" : "🟢"}</code>\n24h Volume: <code>${display.TOSYMBOL}${numberFormat(raw.VOLUME24HOURTO)}</code>\n24h High: <code>${display.TOSYMBOL}${numberFormat(raw.HIGH24HOUR)}</code>\n24h Low: <code>${display.TOSYMBOL}${numberFormat(raw.LOW24HOUR)}</code>\nMarket Cap: <code>${display.TOSYMBOL}${numberFormat(raw.MKTCAP)}</code>\n${await getAds()}</b>`
         return await api.sendMessage(message.chat.id, text, {
             ...defaultOptions,
             reply_to_message_id: message.message_id,
@@ -146,7 +146,7 @@ api.onText(/\/calc(?:$|\s+(.*))?$/, async (message, match) => {
             text += `<b>${currency.padEnd(4)}:</b> <code>${formattedValue}</code>\n`;
         });
 
-        text += `\n${getAds()}`;
+        text += `\n${await getAds()}`;
         
         const timestamp = Math.floor(new Date().getTime() / 1000);
         
@@ -177,136 +177,28 @@ api.onText(/\/calc(?:$|\s+(.*))?$/, async (message, match) => {
     }
 })
 
-api.onText(/\/joke$/, async message => {
-    try {
-        const { setup, punchline } = await (await fetch(`${process.env.JOKE_API}`)).json()
-        const text = `<b>${setup}\n- ${punchline}</b>`
-        return await api.sendMessage(message.chat.id, text, {
-            ...defaultOptions,
-            reply_to_message_id: message.message_id
-        })
-    } catch (error) {
-        return sendError(message.chat.id)
-    }
-})
-
-api.onText(/\/id/, async message => {
-    try {
-        return await api.sendMessage(message.chat.id, `<b>Chat ID: <code>${message.chat.id}</code>\n${message.reply_to_message ? message.reply_to_message.from.is_bot && "Bot" : "User"} ID: <code>${message.reply_to_message ? message.reply_to_message.from.id : message.from.id}</code></b>`, {
-            ...defaultOptions,
-            reply_to_message_id: message.message_id
-        })
-    } catch (errror) {
-        return sendError(message.chat.id)
-    }
-})
-
-api.onText(/\/coin_flip$/, message => {
-    const coins = ["Heads", "Tails"];
-    const random = Math.floor(Math.random() * coins.length)
-    return api.sendMessage(message.chat.id, `<b>${coins[random]}</b>`, {
+api.onText(/\/chart(?:$|\s+(.*))?$/, async (message, match) => {
+    const param = match?.[1] ? match[1].split(" ") : ["BTC", "USDT", "24hr"]
+    let from_coin = param[0] ? param[0].toUpperCase() : "BTC"
+    let to_coin = param[1] ? param[1].toUpperCase() : "USDT"
+    let timeframe = param[2] ? param[2].toLowerCase() : "24hr"
+    const response = await getCryptoChart(from_coin, to_coin, timeframe)
+    if (response?.error) return api.sendMessage(message.chat.id, `<b>${response.error}</b>`, {
         ...defaultOptions,
         reply_to_message_id: message.message_id
     })
-})
-
-api.onText(/\/select(?:$|\s+(.*))?$/, async (message, match) => {
-    try {
-        const options = match?.[1]?.split(" ");
-        const errorMessage = "<b>❌ Invalid format!\n\n📝 Usage: /select [number_of_winners] [name1] [name2] [name3]...\n\n📌 Example:\n/select 2 John Alice Bob Carol</b>";
-        
-        if (!options) {
-            return await api.sendMessage(message.chat.id, errorMessage, {
-                ...defaultOptions,
-                reply_to_message_id: message.message_id
-            });
-        }
-        
-        const [winnersCount, ...names] = options;
-        const numWinners = parseInt(winnersCount);
-       
-        if (isNaN(numWinners) || numWinners <= 0) {
-            return await api.sendMessage(message.chat.id, "<b>❌ Please provide a valid positive number of winners!</b>", {
-                ...defaultOptions,
-                reply_to_message_id: message.message_id
-            });
-        }
-
-        if (names.length < 2) {
-            return await api.sendMessage(message.chat.id, "<b>❌ Please provide at least 2 names to select from!</b>", {
-                ...defaultOptions,
-                reply_to_message_id: message.message_id
-            });
-        }
-
-        if (numWinners > names.length) {
-            return await api.sendMessage(message.chat.id, "<b>❌ Number of winners cannot exceed the number of participants!</b>", {
-                ...defaultOptions,
-                reply_to_message_id: message.message_id
-            });
-        }
-
-        const winners = [];
-        const namesCopy = [...names];
-        
-        for (let i = 0; i < numWinners; i++) {
-            const randomIndex = Math.floor(Math.random() * namesCopy.length);
-            winners.push(namesCopy.splice(randomIndex, 1)[0]);
-        }
-
-        let text = "<b>🎉 Random Selection Results 🎉</b>\n\n";
-        winners.forEach((winner, index) => {
-            text += `<b>${index + 1}. 👑 ${winner}</b>\n`;
-        });
-        
-        text += `\n<i>🎲 Selection made by ${userMention(message.from)}</i>`;
-
-        return await api.sendMessage(message.chat.id, text, {
-            ...defaultOptions,
-            reply_to_message_id: message.message_id
-        });
-
-    } catch (error) {
-        return await sendError(message.chat.id);
-    }
-});
-
-api.onText(/\/help$/, async (message) => {
-    try {
-        const mainText = `<b>🤖 Welcome to the Help Center!</b>\n\n<i><b>Here you can find all available commands and features of our bot.</b></i>\n\n<b>📚 Categories:</b>\n• <i><b><code>💰 Crypto Price</code></b></i> - <i>All cryptocurrency price-related commands</i>\n• <i><b><code>🎮 Fun Commands</code></b></i> - <i>Entertainment and random selection features</i>\n• <i><b><code>ℹ️ Other Commands</code></b></i> - <i>Basic bot functionality and utilities</i>\n\n<i><b>Select a category below to learn more!</b></i>`;
-        const keyboard = {
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: "💰 Crypto Price", callback_data: "help_crypto" },
-                        { text: "🎮 Fun Commands", callback_data: "help_fun" }
-                    ],
-                    [
-                        { text: "ℹ️ Other Commands", callback_data: "help_other" }
-                    ]
-                ]
-            }
-        };
-
-        return await api.sendMessage(message.chat.id, mainText, {
-            ...defaultOptions,
-            ...keyboard,
-            parse_mode: 'HTML',
-            reply_to_message_id: message.message_id
-        });
-    } catch (error) {
-        return await sendError(message.chat.id);
-    }
-});
-
-api.onText(/\/dev$/, async message => {
-    try {
-        const text = `<b>Developer: @${settings.admin.username}</b>`
-        return await api.sendMessage(message.chat.id, text, {
+    if (!response?.image) {
+        return await api.sendMessage(message.chat.id, `<b>${response}</b>`, {
             ...defaultOptions,
             reply_to_message_id: message.message_id
         })
-    } catch (error) {
-        return await sendError(message.chat.id);
     }
+    return api.sendPhoto(message.chat.id, response.image, {
+        caption: `<b>${from_coin}-${to_coin} - ${timeframe}</b>`,
+        ...defaultOptions,
+        reply_to_message_id: message.message_id
+    }, {
+        filename: `${crypto.randomUUID()}.jpeg`,
+        contentType: "application/octet-stream"
+    })
 })

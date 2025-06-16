@@ -24,7 +24,7 @@ api.on("callback_query", async (query) => {
             const data = await response.json();
             const raw = data["RAW"][from_coin][to_coin];
             const display = data["DISPLAY"][from_coin][to_coin];
-            const text = `<b>${parseFloat(amount).toFixed(2)} ${from_coin}: <code>${display.TOSYMBOL}${(parseFloat(amount) * raw.PRICE).toFixed(6)}</code>\n24h Change: <code>${raw.CHANGEPCT24HOUR.toFixed(2)}%</code>\n24h Volume: <code>${display.TOSYMBOL}${numberFormat(raw.VOLUME24HOURTO)}</code>\n24h High: <code>${display.TOSYMBOL}${numberFormat(raw.HIGH24HOUR)}</code>\n24h Low: <code>${display.TOSYMBOL}${numberFormat(raw.LOW24HOUR)}</code>\nMarket Cap: <code>${display.TOSYMBOL}${numberFormat(raw.MKTCAP)}</code>\n${getAds()}</b>`;
+            const text = `<b>${parseFloat(amount).toFixed(2)} ${from_coin}: <code>${display.TOSYMBOL}${(parseFloat(amount) * raw.PRICE).toFixed(6)}</code>\n24h Change: <code>${raw.CHANGEPCT24HOUR.toFixed(2)}%</code>\n24h Volume: <code>${display.TOSYMBOL}${numberFormat(raw.VOLUME24HOURTO)}</code>\n24h High: <code>${display.TOSYMBOL}${numberFormat(raw.HIGH24HOUR)}</code>\n24h Low: <code>${display.TOSYMBOL}${numberFormat(raw.LOW24HOUR)}</code>\nMarket Cap: <code>${display.TOSYMBOL}${numberFormat(raw.MKTCAP)}</code>\n${await getAds()}</b>`;
 
             return await api.editMessageText(text, {
                 chat_id: message.chat.id,
@@ -74,7 +74,7 @@ api.on("callback_query", async (query) => {
                 text += `<b>${currency.padEnd(4)}:</b> <code>${formattedValue}</code>\n`;
             });
 
-            text += `\n${getAds()}`;
+            text += `\n${await getAds()}`;
 
             const newTimestamp = Math.floor(new Date().getTime() / 1000);
 
