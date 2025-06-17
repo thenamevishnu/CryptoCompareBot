@@ -85,28 +85,11 @@ api.on("callback_query", async (query) => {
                 reply_markup: {
                     inline_keyboard: [
                         [
-                            {
-                                text: "🔄 Refresh",
-                                callback_data: `calc_${amount}_${from_coin}_${newTimestamp}`,
-                            },
-                        ],
-                        [
-                            {
-                                text: "¼×",
-                                callback_data: `calc_${parseFloat(amount) * 0.25}_${from_coin}_${newTimestamp}`,
-                            },
-                            {
-                                text: "½×",
-                                callback_data: `calc_${parseFloat(amount) * 0.5}_${from_coin}_${newTimestamp}`,
-                            },
-                            {
-                                text: "2×",
-                                callback_data: `calc_${parseFloat(amount) * 2}_${from_coin}_${newTimestamp}`,
-                            },
-                            {
-                                text: "4×",
-                                callback_data: `calc_${parseFloat(amount) * 4}_${from_coin}_${newTimestamp}`,
-                            },
+                            { text: "¼×", callback_data: `calc_${amount * 0.25}_${from_coin}_${newTimestamp}` },
+                            { text: "½×", callback_data: `calc_${amount * 0.5}_${from_coin}_${newTimestamp}` },
+                            { text: "🔄", callback_data: `calc_${amount}_${from_coin}_${newTimestamp}` },
+                            { text: "2×", callback_data: `calc_${amount * 2}_${from_coin}_${newTimestamp}` },
+                            { text: "4×", callback_data: `calc_${amount * 4}_${from_coin}_${newTimestamp}` }
                         ],
                     ],
                 },

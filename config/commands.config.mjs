@@ -9,7 +9,7 @@ export const commands = {
             description: 'Get cryptocurrency price information'
         },
         {
-            command: "/price",
+            command: '/price',
             description: 'Get cryptocurrency price information'
         },
         {
@@ -19,20 +19,28 @@ export const commands = {
         {
             command: '/chart',
             description: 'Get cryptocurrency price chart'
+        },
+        {
+            command: '/trending',
+            description: 'Show trending cryptocurrencies'
+        },
+        {
+            command: '/gas',
+            description: 'Get Ethereum gas prices'
         }
     ],
     fun: [
         {
             command: '/joke',
-            description: 'Get random joke setup-punchline'
+            description: 'Get a random joke'
         },
         {
             command: '/coin_flip',
-            description: 'Flip a coin heads/tails'
+            description: 'Flip a coin'
         },
         {
             command: '/select',
-            description: 'Random selection from given names'
+            description: 'Randomly select winners from a list'
         }
     ],
     other: [

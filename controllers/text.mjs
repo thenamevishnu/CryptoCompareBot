@@ -111,7 +111,7 @@ api.onText(/\/p(?:$|\s+(.*))?$|\/price(?:$|\s+(.*))?$/, async (message, match) =
             }
         })
     } catch (error) {
-        return sendError(message.chat.id)
+        return await sendError(message.chat.id)
     }
 })
 
@@ -153,10 +153,10 @@ api.onText(/\/calc(?:$|\s+(.*))?$/, async (message, match) => {
         const keyboard = {
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: "🔄 Refresh", callback_data: `calc_${amount}_${from_coin}_${timestamp}` }],
                     [
                         { text: "¼×", callback_data: `calc_${amount*0.25}_${from_coin}_${timestamp}` },
                         { text: "½×", callback_data: `calc_${amount*0.5}_${from_coin}_${timestamp}` },
+                        { text: "🔄", callback_data: `calc_${amount}_${from_coin}_${timestamp}` },
                         { text: "2×", callback_data: `calc_${amount*2}_${from_coin}_${timestamp}` },
                         { text: "4×", callback_data: `calc_${amount*4}_${from_coin}_${timestamp}` }
                     ]
@@ -173,7 +173,7 @@ api.onText(/\/calc(?:$|\s+(.*))?$/, async (message, match) => {
         })
     } catch (error) {
         console.log(error.message)
-        return sendError(message.chat.id)
+        return await sendError(message.chat.id)
     }
 })
 
@@ -202,3 +202,80 @@ api.onText(/\/chart(?:$|\s+(.*))?$/, async (message, match) => {
         contentType: "application/octet-stream"
     })
 })
+
+api.onText(/\/trending/, async message => {
+    try {
+        const response = await (await fetch(`${process.env.COINGECKO_API}/search/trending`)).json()
+        if (!response?.coins) {
+            return await api.sendMessage(message.chat.id, "<b>✖️ There is no trending list found.</b>", {
+                ...defaultOptions,
+                reply_to_message_id: message.message_id
+            })
+        }
+        const coins = response.coins
+        let text = `<b>📈 TRENDING COINS ON COINGECKO</b>\n`
+        coins.forEach(coin => {
+            text += `\n<b><code>#${coins.indexOf(coin) + 1}</code> ${coin.item.name} (${coin.item.symbol.toUpperCase()})</b>`
+            text += `\n<b>└ Price: <code>$${coin.item.data.price.toFixed(6)}</code></b>`
+            text += `\n<b>└ Market Cap Rank: <code>#${coin.item.market_cap_rank || 'N/A'}</code></b>\n`
+        });
+        text += `\n\n${await getAds()}`
+        return await api.sendMessage(message.chat.id, text, {
+            ...defaultOptions,
+            reply_to_message_id: message.message_id
+        })
+    } catch (error) {
+        return await sendError(message.chat.id);
+    }
+})
+
+api.onText(/\/gas/, async (message) => {
+    try {
+        const res = await fetch(`${process.env.ETH_GAS_API}`);
+        const json = await res.json();
+        const block = json.blockPrices?.[0];
+        if (!block) {
+            return api.sendMessage(
+                message.chat.id,
+                "<b>✖️ Failed to fetch gas data.</b>",
+                {
+                    ...defaultOptions,
+                    reply_to_message_id: message.message_id,
+                }
+            );
+        }
+
+        const baseFee = block.baseFeePerGas;
+        const estimate = block.estimatedPrices.find((e) => e.confidence === 95); // or any other
+
+        const maxPriorityFee = estimate.maxPriorityFeePerGas;
+        const totalGwei = baseFee + maxPriorityFee;
+        const gasUnits = 21000;
+        const totalGasCost = totalGwei * gasUnits;
+        const totalEth = totalGasCost / 1e9;
+
+        let text = `<b>⛽ Ethereum Gas Tracker</b>\n\n`;
+        text += `<b>Block:</b> <code>#${block.blockNumber}</code>\n`;
+        text += `<b>Base Fee:</b> <code>${baseFee.toFixed(2)} Gwei</code>\n`;
+        text += `<b>Priority Fee:</b> <code>${maxPriorityFee.toFixed(2)} Gwei</code>\n`;
+        text += `<b>Total Per Gas:</b> <code>${totalGwei.toFixed(2)} Gwei</code>\n`;
+        text += `<b>Est. TX Fee (21000 gas):</b> <code>~${totalEth.toFixed(6)} ETH</code>\n\n`;
+
+        text += `💡 <i>Confidence: ${estimate.confidence}%</i>`;
+
+        return api.sendMessage(message.chat.id, text, {
+            ...defaultOptions,
+            reply_to_message_id: message.message_id,
+        });
+    } catch (err) {
+        console.error(err);
+        return api.sendMessage(
+            message.chat.id,
+            "<b>⚠️ Error fetching gas info.</b>",
+            {
+                ...defaultOptions,
+                reply_to_message_id: message.message_id,
+            }
+        );
+    }
+});
